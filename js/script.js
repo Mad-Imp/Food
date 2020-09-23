@@ -295,15 +295,8 @@ window.addEventListener("DOMContentLoaded", () => {
     ".menu .container",
     "menu__item",
   ).render();
+
+  fetch("db.json")
+    .then((data) => data.json())
+    .then((res) => console.log(res));
 });
-
-
-
-
-
-
-
-
-
-
-
