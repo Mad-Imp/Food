@@ -143,86 +143,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
   window.addEventListener("scroll", showModalByScroll);
 
-  //Forms
-
-  const forms = document.querySelectorAll("form");
-
-  const message = {
-    loading: "img/form/spinner.svg",
-    success: "Спасибо! Скоро мы с Вами свяжемся",
-    failure: "Что-то пошло не так...",
-  };
-
-  forms.forEach((item) => {
-    postData(item);
-  });
-
-  function postData(form) {
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-
-      const statusMessage = document.createElement("img");
-      statusMessage.src = message.loading;
-      statusMessage.style.cssText = `
-			display: block;
-			margin: 0 auto;
-				`;
-      form.insertAdjacentElement("afterend", statusMessage);
-
-      const formData = new FormData(form);
-
-      const obj = {};
-      formData.forEach(function (value, key) {
-        obj[key] = value;
-      });
-
-      fetch("server1.php", {
-        method: "POST",
-        headers: {
-          "Content-type": "application/json",
-        },
-        body: JSON.stringify(obj),
-      })
-        .then((data) => data.text())
-        .then((data) => {
-          console.log(data);
-          showThanksModal(message.success);
-
-          statusMessage.remove();
-        })
-        .catch(() => {
-          showThanksModal(message.failure);
-        })
-        .finally(() => {
-          form.reset();
-        });
-    });
-  }
-
-  function showThanksModal(message) {
-    const prevModalDialog = document.querySelector(".modal__dialog");
-
-    prevModalDialog.classList.add("hide");
-    openModal();
-
-    const thanksModal = document.createElement("div");
-    thanksModal.classList.add("modal__dialog");
-    thanksModal.innerHTML = `
-			<div class="modal__content">
-				<div class="modal__close" data-close>×</div>
-				<div class="modal__title">${message}</div>
-			</div>
-			`;
-
-    document.querySelector(".modal").append(thanksModal);
-    setTimeout(() => {
-      thanksModal.remove();
-      prevModalDialog.classList.add("show");
-      prevModalDialog.classList.remove("hide");
-      closeModal();
-    }, 4000);
-  }
-
   //Используем классы для карточек
 
   class MenuCard {
@@ -266,37 +186,112 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  new MenuCard(
-    "img/tabs/vegy.jpg",
-    "vegy",
-    'Меню "Фитнес"',
-    'Меню "Фитнес" - это новый подход к приготовлению блюд: больше свежих овощей и фруктов. Продукт активных и здоровых людей. Это абсолютно новый продукт с оптимальной ценой и высоким качеством!',
-    9,
-    ".menu .container",
-    "menu__item",
-  ).render();
+  const getResource = async (url) => {
+    const res = await fetch(url);
 
-  new MenuCard(
-    "img/tabs/elite.jpg",
-    "elite",
-    "Меню “Премиум”",
-    "В меню “Премиум” мы используем не только красивый дизайн упаковки, но и качественное исполнение блюд. Красная рыба, морепродукты, фрукты - ресторанное меню без похода в ресторан! Лучшее решение для любителей элитной кухни!",
-    14,
-    ".menu .container",
-    "menu__item",
-  ).render();
+    if (!res.ok) {
+      throw new Error(`Could not fetch ${url}, status: ${res.status}`);
+    }
 
-  new MenuCard(
-    "img/tabs/post.jpg",
-    "post",
-    'Меню "Постное"',
-    "Меню “Постное” - это тщательный подбор ингредиентов: полное отсутствие продуктов животного происхождения, молоко из миндаля, овса, кокоса или гречки, правильное количество белков за счет тофу и импортных вегетарианских стейков.",
-    11,
-    ".menu .container",
-    "menu__item",
-  ).render();
+    return await res.json();
+  };
 
-  fetch("db.json")
+  getResource("http://localhost:3000/menu").then((data) => {
+    data.forEach(({ img, altimg, title, descr, price }) => {
+      new MenuCard(
+        img,
+        altimg,
+        title,
+        descr,
+        price,
+        ".menu .container",
+      ).render();
+    });
+  });
+
+  //Forms
+
+  const forms = document.querySelectorAll("form");
+
+  const message = {
+    loading: "img/form/spinner.svg",
+    success: "Спасибо! Скоро мы с Вами свяжемся",
+    failure: "Что-то пошло не так...",
+  };
+
+  forms.forEach((item) => {
+    bindPostData(item);
+  });
+
+  const postData = async (url, data) => {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: data,
+    });
+
+    return await res.json();
+  };
+
+  function bindPostData(form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const statusMessage = document.createElement("img");
+      statusMessage.src = message.loading;
+      statusMessage.style.cssText = `
+			display: block;
+			margin: 0 auto;
+				`;
+      form.insertAdjacentElement("afterend", statusMessage);
+
+      const formData = new FormData(form);
+
+      const json = JSON.stringify(Object.fromEntries(formData.entries()));
+
+      postData("http://localhost:3000/requests", json)
+        .then((data) => {
+          console.log(data);
+          showThanksModal(message.success);
+
+          statusMessage.remove();
+        })
+        .catch(() => {
+          showThanksModal(message.failure);
+        })
+        .finally(() => {
+          form.reset();
+        });
+    });
+  }
+
+  function showThanksModal(message) {
+    const prevModalDialog = document.querySelector(".modal__dialog");
+
+    prevModalDialog.classList.add("hide");
+    openModal();
+
+    const thanksModal = document.createElement("div");
+    thanksModal.classList.add("modal__dialog");
+    thanksModal.innerHTML = `
+			<div class="modal__content">
+				<div class="modal__close" data-close>×</div>
+				<div class="modal__title">${message}</div>
+			</div>
+			`;
+
+    document.querySelector(".modal").append(thanksModal);
+    setTimeout(() => {
+      thanksModal.remove();
+      prevModalDialog.classList.add("show");
+      prevModalDialog.classList.remove("hide");
+      closeModal();
+    }, 4000);
+  }
+
+  fetch("http://localhost:3000/menu")
     .then((data) => data.json())
     .then((res) => console.log(res));
 });

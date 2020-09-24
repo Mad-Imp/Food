@@ -1,4 +1,5 @@
 /jsLinters
 /node_modules
-/inspectionProfiles
 /.vscode
+*.jshintrc
+*.gitignore
